@@ -132,8 +132,18 @@ https://stackoverflow.com/questions/50525766/apache-beam-what-is-the-difference-
 
 
 
+### DataframeTransform is a PTransform that applies a function that takes and returns DataFrames:
+from apache_beam.dataframe.transforms import DataframeTransform
 
+with beam.Pipeline() as p:
+  ...
+  | beam.Select(DOLocationID=lambda line: int(..),
+                passenger_count=lambda line: int(..))
+  | DataframeTransform(lambda df: df.groupby('DOLocationID').sum())
+  | beam.Map(lambda row: f"{row.DOLocationID},{row.passenger_count}")
+  ...
 
+# ref: https://beam.apache.org/documentation/dsls/dataframes/overview/
 
 
 
