@@ -1,0 +1,143 @@
+
+
+
+python3 wordcount.py --input ipso.txt --output out.txt
+
+
+# read iris
+python3 test.py --input iris.csv  --output iris2.csv
+
+
+# process iris using DeferredDataframes in 
+python3 beam_pandas.py --input iris.csv  --output iris2.csv
+
+python3 beam_pandas.py --input iris.csv  --output iris2.csv
+
+
+
+
+
+
+The big difference between Beam DataFrames and Pandas DataFrames is that operations are deferred by the Beam API to support the beam parallel processing model. You can think of Beam DataFrames as a domain specific language for Beam pipelines similar to being SQL. DataFrames is a DSL built into the beam python SDK.
+
+More on Beam dataframes: https://beam.apache.org/releases/pydoc/2.31.0/apache_beam.dataframe.frames.html
+
+
+
+To run dataflow script from mac console, making sure to select the region and subnetwork used by GCS.
+
+pip install google-apitools
+export GOOGLE_APPLICATION_CREDENTIALS=/Users/adambricknell/Downloads/dft-amis-sb-abricknell-3658e4c95b2c.json
+python3 -m beam_pandas \
+    --region us-central1 \
+    --input gs://beam_test_23ge/iris.csv \
+    --output gs://beam_test_23ge/iris2.csv \
+    --runner DataflowRunner \
+    --project dft-amis-sb-abricknell \
+    --temp_location gs://beam_test_23ge/ \
+    --subnetwork=https://www.googleapis.com/compute/alpha/projects/dft-amis-sb-abricknell/regions/us-central1/subnetworks/for-osrm \
+    --experiment use_unsupported_python_version  # need if using python3.9
+
+To run in GCP console instead of from mac: same code as above
+
+Subnetwork param should follow: --subnetwork=https://www.googleapis.com/compute/alpha/projects/{PROJECT}/regions/{REGION}/subnetworks/{SUBNETWORK}
+Source: https://stackoverflow.com/questions/51362560/network-default-is-not-accessible-to-dataflow-service-account
+
+
+
+
+# if beam wont install in GCP console:
+pip3 install --upgrade setuptools
+pip3 install --upgrade pip
+
+
+
+
+
+Beam might treat every 'row' as a dict of key/value pairs
+
+
+
+
+
+On running Beam in notebook (Dataflow -> Workbench), which might be easiest way to run one-off things:
+https://cloud.google.com/dataflow/docs/guides/interactive-pipeline-development
+
+
+Beam can't give you things to do with row counts or positions as it needs to handle streaming
+
+
+
+This works in Beam Notebook might work: defines and runs the pipeline, inc new columns and objects made en route
+df = p | read_csv('gs://beam_test_23ge/iris.csv') 
+df['new'] = df['petal.length'] * df['sepal.width']
+df = df.query('new > 10')
+df2 = df.groupby(df.variety).describe()
+df2.to_csv('gs://beam_test_23ge/iris2.csv', index=False) # adds random extras to file name
+p.run()
+
+Could test things like the above work by applying them a subset of the data first
+
+
+
+
+
+
+
+### Would hope something like the below works for bigQuery. It runs but nothing appears in BQ
+from apache_beam.io.gcp.internal.clients import bigquery
+
+table_spec = 'addrbase.iris'
+table_schema = 'sepal.width:NUMERIC, new:NUMERIC'
+
+options = PipelineOptions()     # reinitialise pipeline
+p = beam.Pipeline(options=options)
+
+df = p | read_csv('gs://beam_test_23ge/iris.csv') 
+df['new'] = df['petal.length'] * df['sepal.width']
+df = df.query('new > 10')
+df = df[['sepal.width', 'new']]
+
+df | beam.io.WriteToBigQuery(
+    table_spec,
+    schema = table_schema,
+    write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+    create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
+
+p.run()
+
+
+
+
+
+Advice on making beam faster:
+https://stackoverflow.com/questions/58041925/apache-beam-what-are-the-key-concepts-for-writing-efficient-data-processing-pi/58054759#58054759
+
+
+
+Fan-in = multiple inputs condensed to one
+Fan-oiut = one input to multiple outputs
+
+
+
+
+DoFn is passed to ParDo, to be applied to all elements
+
+Difference between DoFn and a standard function (they are very very similar):
+https://stackoverflow.com/questions/50525766/apache-beam-what-is-the-difference-between-dofn-and-simplefunction
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
