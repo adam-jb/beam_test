@@ -27,7 +27,7 @@ More on Beam dataframes: https://beam.apache.org/releases/pydoc/2.31.0/apache_be
 To run dataflow script from mac console, making sure to select the region and subnetwork used by GCS.
 
 pip install google-apitools
-export GOOGLE_APPLICATION_CREDENTIALS=/Users/adambricknell/Downloads/dft-amis-sb-abricknell-3658e4c95b2c.json
+export GOOGLE_APPLICATION_CREDENTIALS={path}.json
 python3 -m beam_pandas \
     --region us-central1 \
     --input gs://beam_test_23ge/iris.csv \
